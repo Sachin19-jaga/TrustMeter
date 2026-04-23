@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Trust Meter - AI Exam Integrity System
 ## Flutter Mobile App
 
@@ -58,3 +59,6 @@ flutter run
 Add camera permissions:
 - Android: CAMERA permission in AndroidManifest.xml
 - iOS: NSCameraUsageDescription in Info.plist
+=======
+# TrustMeter
+>>>>>>> eed92df93497e3bdb951ef6591da8cf122a84ebd
