@@ -1,0 +1,91 @@
+import 'package:flutter/material.dart';
+import '../models/models.dart';
+import 'storage_service.dart';
+
+class ScoreService extends ChangeNotifier {
+  int _score = 100;
+  final List<ScoreEvent> _events = [];
+  bool _examActive = false;
+  int _secondsElapsed = 0;
+  String _studentId = '';
+  String _studentName = '';
+
+  static const int deductMultipleFaces = 30;
+  static const int deductLookAway = 10;
+  static const int deductLeftFrame = 20;
+  static const int deductHeadMovement = 10;
+
+  int get score => _score;
+  List<ScoreEvent> get events => List.unmodifiable(_events);
+  bool get examActive => _examActive;
+  int get secondsElapsed => _secondsElapsed;
+
+  Color get scoreColor {
+    if (_score >= 70) return const Color(0xFF2ECC71);
+    if (_score >= 40) return const Color(0xFFF39C12);
+    return const Color(0xFFE74C3C);
+  }
+
+  String get trustLabel {
+    if (_score >= 70) return 'TRUSTED';
+    if (_score >= 40) return 'SUSPICIOUS';
+    return 'HIGH RISK';
+  }
+
+  void startExam({String studentId = '', String studentName = ''}) {
+    _score = 100;
+    _events.clear();
+    _examActive = true;
+    _secondsElapsed = 0;
+    _studentId = studentId;
+    _studentName = studentName.isNotEmpty ? studentName : studentId;
+    notifyListeners();
+  }
+
+  /// Ends exam and saves result to local storage
+  Future<void> endExam() async {
+    _examActive = false;
+    final result = ExamResult(
+      studentId: _studentId,
+      studentName: _studentName,
+      finalScore: _score,
+      examDate: DateTime.now(),
+      durationSeconds: _secondsElapsed,
+      events: List.from(_events),
+    );
+    await StorageService.saveResult(result);
+    notifyListeners();
+  }
+
+  void deductScore(String label, int amount) {
+    if (!_examActive || _score <= 0) return;
+    _score = (_score - amount).clamp(0, 100);
+    _events.add(ScoreEvent(
+      label: label,
+      deduction: amount,
+      scoreAfter: _score,
+      time: DateTime.now(),
+    ));
+    notifyListeners();
+  }
+
+  void onMultipleFacesDetected() => deductScore('Multiple faces detected', deductMultipleFaces);
+  void onLookingAway()           => deductScore('Looking away frequently', deductLookAway);
+  void onLeftFrame()             => deductScore('Candidate left frame', deductLeftFrame);
+  void onExcessiveHeadMovement() => deductScore('Excessive head movement', deductHeadMovement);
+
+  void tickTimer() {
+    _secondsElapsed++;
+    notifyListeners();
+  }
+
+  void reset() {
+    _score = 100;
+    _events.clear();
+    _examActive = false;
+    _secondsElapsed = 0;
+    _studentId = '';
+    _studentName = '';
+    notifyListeners();
+  }
+}
